@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaceX Launches</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    #chart-container {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Space X Launches</h1>
+  <div id="chart-container">
+    <canvas id="spaceXLaunchesChart" width="800" height="400"></canvas>
+  </div>
+
+  <script>
+    async function fetchLaunchData() {
+      const apiUrl = 'https://api.spacexdata.com/v4/launches';
+
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        const launches = data.map(launch => {
+          return {
+            date: new Date(launch.date_utc),
+            success: launch.success
+          };
+        });
+
+        return launches;
+      } catch (error) {
+        console.error('Error fetching SpaceX launch data:', error);
+        return null;
+      }
+    }
+
+    async function renderLaunchesChart() {
+      const launches = await fetchLaunchData();
+      if (launches !== null) {
+        const launchesByYear = launches.reduce((acc, launch) => {
+          const year = launch.date.getFullYear();
+          acc[year] = acc[year] || { successes: 0, failures: 0 };
+          if (launch.success) {
+            acc[year].successes++;
+          } else {
+            acc[year].failures++;
+          }
+          return acc;
+        }, {});
+
+        // Extract data for chart
+        const years = Object.keys(launchesByYear);
+        const successes = years.map(year => launchesByYear[year].successes);
+        const failures = years.map(year => launchesByYear[year].failures);
+
+        // Render chart
+        const ctx = document.getElementById('spaceXLaunchesChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: years,
+            datasets: [{
+              label: 'Successful Launches',
+              data: successes,
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }, {
+              label: 'Failed Launches',
+              data: failures,
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              yAxes: [{
+                ticks: {
+                  beginAtZero: true
+                }
+              }]
+            },
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      } else {
+        // Handle error fetching launch data
+        // Display a message or fallback content
+      }
+    }
+
+    // Call the function to render the chart with SpaceX launch data
+    renderLaunchesChart();
+  </script>
+</body>
+</html>

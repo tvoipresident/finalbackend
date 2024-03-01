@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    #chart-container {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Weather Forecast</h1>
+
+  <div id="chart-container">
+    <canvas id="weatherMetricsChart" width="800" height="400"></canvas>
+  </div>
+
+  <script>
+    async function fetchWeatherData() {
+      const apiKey = '8399209495e31e3287e9c9d9de33c0e0';
+      const city = 'Astana';
+      const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`;
+
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        const forecasts = data.list.map(item => {
+          return {
+            date: new Date(item.dt * 1000),
+            temperature: item.main.temp - 273.15
+          };
+        });
+
+        return forecasts;
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+        return null;
+      }
+    }
+
+    async function renderWeatherChart() {
+      const forecasts = await fetchWeatherData();
+      if (forecasts !== null) {
+        const labels = forecasts.map(forecast => forecast.date.toLocaleDateString());
+        const temperatures = forecasts.map(forecast => forecast.temperature);
+
+        const ctx = document.getElementById('weatherMetricsChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Temperature (°C)',
+              data: temperatures,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1,
+              fill: false
+            }]
+          },
+          options: {
+            scales: {
+              yAxes: [{
+                ticks: {
+                  beginAtZero: false
+                }
+              }]
+            },
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      } 
+    }
+    renderWeatherChart();
+  </script>
+</body>
+</html>
